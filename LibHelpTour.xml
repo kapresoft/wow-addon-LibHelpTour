@@ -1,0 +1,8 @@
+<!--suppress ALL -->
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+
+	<!-- The file an addon includes to embed the library; the addon loads LibStub first. -->
+	<Script file="Libs\LibHelpTour.lua"/>
+
+</Ui>
