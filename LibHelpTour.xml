@@ -4,5 +4,6 @@
 
 	<!-- The file an addon includes to embed the library; the addon loads LibStub first. -->
 	<Script file="Libs\LibHelpTour.lua"/>
+	<Script file="Libs\Tip.lua"/>
 
 </Ui>
