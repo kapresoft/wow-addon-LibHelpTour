@@ -55,7 +55,7 @@ end
 
 --- Saved on the first open, so new users skip older feature tours.
 --- @param config LibHelpTour_Config
---- @return number
+--- @return number?
 local function Baseline(config)
   if not config.getBaseline() then config.setBaseline(HighestSince(config)) end
   return config.getBaseline()

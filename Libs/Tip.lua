@@ -52,7 +52,7 @@ end
 
 --- @param tip LibHelpTour_Tip
 local function CreateCloseButton(tip)
-  local button = CreateFrame('Button', nil, tip, 'UIPanelCloseButton')
+  local button = CreateFrame('Button', nil, tip, 'UIPanelCloseButton' --[[@as Template]])
   button:SetPoint('TOPRIGHT', 6, 6)
   -- Replaces the template's OnClick, which hides the parent
   button:SetScript('OnClick', function()
@@ -84,14 +84,15 @@ New Instance
 --- @param parent Frame
 --- @return LibHelpTour_Tip
 function lib:CreateTip(parent)
-  local tip = CreateFrame('Frame', nil, parent, 'GlowBoxTemplate') --[[@as LibHelpTour_Tip]]
+  --- @type LibHelpTour_Tip
+  local tip = CreateFrame('Frame', nil, parent, 'GlowBoxTemplate' --[[@as Template]])
   Mixin(tip, TipMixin)
   tip:Hide()
   tip:EnableMouse(true)
   tip:SetClampedToScreen(true)
   CreateTexts(tip)
   CreateCloseButton(tip)
-  tip.Arrow = CreateFrame('Frame', nil, tip, 'GlowBoxArrowTemplate')
+  tip.Arrow = CreateFrame('Frame', nil, tip, 'GlowBoxArrowTemplate' --[[@as Template]])
   tip.ArrowUp = CreateArrowUp(tip)
   return tip
 end
