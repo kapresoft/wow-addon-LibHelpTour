@@ -39,3 +39,16 @@ luac.out
 *.x86_64
 *.hex
 
+# IDE's
+*.iml
+/.idea/
+/.history/
+/.vscode/
+/.claude/
+
+ThirdParty/Libs
+
+# ignore
+/.release/
+.emmyrc.json
+deployer-config.lua

@@ -1,0 +1,33 @@
+package-as: LibHelpTour
+# --------------------------
+manual-changelog:
+  filename: dev/changelog-release.md
+  markup-type: markdown
+enable-nolib-creation: no
+
+embedded-libraries:
+  - LibStub
+
+tools-used:
+  - DevSuite
+  - DebugChatFrame
+  - Bugsack
+  - Bug-Grabber
+
+# Use GitHub because svn repos are slower
+# basepath is ${package-as}
+externals:
+  ThirdParty/Libs/LibStub:
+    url: https://github.com/lua-wow/LibStub
+    tag: latest
+
+ignore:
+  - "*.md"
+  - "*.yaml"
+  - "*.yml"
+  - "*.toml"
+  - dev
+  - doc
+  - ThirdParty/Libs/LibStub/*.toc
+  - ThirdParty/Libs/LibStub/tests
+  - ThirdParty/Libs/LibStub/UPSTREAM_REVISION
