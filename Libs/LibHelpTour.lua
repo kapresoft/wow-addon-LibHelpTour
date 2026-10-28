@@ -4,9 +4,9 @@ LibHelpTour: picks which tour step an addon's help tip shows.
 One controller per addon (lib:New). One tour per session: the first eligible
 tour with unseen steps owns the session until /reload, even after it
 finishes. A step's close button or its action (CompleteStep) advances to the
-next step.
+next step. A skippable tour's Skip button (SkipTour) dismisses all its steps.
 -------------------------------------------------------------------------------]]
-local MAJOR, MINOR = 'LibHelpTour-1.0', 1
+local MAJOR, MINOR = 'LibHelpTour-1.0', 2
 --- @class LibHelpTour-1.0
 --- @field Controller LibHelpTour_Controller
 local lib = LibStub:NewLibrary(MAJOR, MINOR); if not lib then return end
@@ -24,6 +24,7 @@ lib.loadTip = true
 --- @field id string
 --- @field targetId string       @Matches the targetId passed to OnTargetShown
 --- @field since number?         @Feature tours only; nil means always eligible
+--- @field skippable boolean?    @Shows a Skip button on every step but the last
 --- @field steps LibHelpTour_Step[]
 
 --- @class LibHelpTour_Config
@@ -32,6 +33,7 @@ lib.loadTip = true
 --- @field getBaseline fun(): number?
 --- @field setBaseline fun(baseline: number)
 --- @field text fun(textKey: string): string
+--- @field skipTextKey? string                               @Skip button label; required if a tour is skippable
 --- @field tipParent? fun(target: LibHelpTour_Target): Frame @Default: the target, as a Frame
 --- @field tipStrata? FrameStrata
 
@@ -153,8 +155,31 @@ function Controller:OnTargetShown(targetId, target)
   local step = tour.steps[index]
   self.showing = { targetId = targetId, target = target, step = step }
   local tip = self:TipFor(target)
+  local skipText = self:SkipText(tour, index)
   tip.onClose = function() self:CompleteStep(step.key) end
-  tip:ShowStep(self.config.text(step.textKey), step.anchor(target), index, #tour.steps)
+  tip.onSkip = skipText and function() self:SkipTour() end
+  tip:ShowStep(self.config.text(step.textKey), step.anchor(target), index, #tour.steps, skipText)
+end
+
+--- @param tour LibHelpTour_Tour
+--- @param index number
+--- @return string? @nil unless the tour is skippable and index isn't its last step
+function Controller:SkipText(tour, index)
+  if not tour.skippable or index == #tour.steps then return nil end
+  local config = self.config
+  assert(config.skipTextKey, 'LibHelpTour: skippable tours need config.skipTextKey')
+  return config.text(config.skipTextKey)
+end
+
+--- Dismisses every step of the session tour and hides the tip.
+function Controller:SkipTour()
+  local tour = self.sessionTour
+  if not tour then return end
+  local dismissed = self.config.dismissed()
+  for _, step in ipairs(tour.steps) do
+    dismissed[step.key] = true
+  end
+  self:HideTip()
 end
 
 --- Hides the tip when its target goes away, e.g. a released dialog.

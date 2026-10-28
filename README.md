@@ -10,6 +10,7 @@ Embeddable WoW library for guided help tours that point at an addon's controls s
 - Remembers which steps each user has seen, in your addon's own saved variables.
 - Feature tours: a tour added in a later release shows only to users who installed before it, not to new users.
 - One tour per session, so users are never flooded with tips.
+- Optional Skip button, so users who know your addon can dismiss a whole tour at once.
 - Safe to embed in many addons at once: no XML templates and no global names besides `LibStub`.
 - Works on Retail and Classic clients.
 
@@ -79,6 +80,7 @@ local Tours = {
 - `key` is saved once the user has seen the step, so keep it stable and unique across all your tours.
 - `anchor` is called each time the step shows. A step whose anchor is `nil` or hidden is skipped.
 - `since` marks a feature tour. Give each new feature tour the next number (1, 2, 3, ...). Leave it out for tours everyone should see, such as a welcome tour.
+- `skippable = true` adds a Skip button to every step but the last. Skipping marks all of the tour's steps as seen, so it doesn't come back. It needs `skipTextKey` in the controller settings.
 
 ### 2. Create a controller
 
@@ -102,6 +104,7 @@ local HelpTour = LibStub('LibHelpTour-1.0'):New({
 | `dismissed` | yes | Returns the saved table of seen step keys, e.g. `{}` by default. |
 | `getBaseline` / `setBaseline` | yes | Read and write the saved feature-tour baseline, a number. It's saved on the first show, so new users skip existing feature tours. |
 | `text` | yes | Turns a step's `textKey` into the text shown, e.g. a locale lookup. |
+| `skipTextKey` | if a tour is `skippable` | The Skip button's label, passed to `text` like a step's `textKey`. |
 | `tipParent` | no | `function(target)` returning the tip's parent frame. Defaults to the target itself. |
 | `tipStrata` | no | The tip's frame strata, e.g. `'FULLSCREEN_DIALOG'` when the tip is parented to `UIParent`. |
 
@@ -120,6 +123,7 @@ end
 
 - `OnTargetShown(targetId, target)` shows the next unseen step, or hides the tip when there is none. The controller creates the tip itself the first time.
 - `CompleteStep(key)` marks a step as seen. If that step is on screen, the tip moves on to the next one. Closing the tip does the same.
+- `SkipTour()` marks every step of the current tour as seen and hides the tip. The Skip button calls it; you only need it for your own skip control.
 - `OnTargetHidden(target)` hides the tip when its target goes away. It's only needed when the tip isn't the target's child (a `tipParent` such as `UIParent`), or when the target is an AceGUI widget that gets released.
 
 ## License

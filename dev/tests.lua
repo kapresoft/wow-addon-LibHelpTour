@@ -5,6 +5,7 @@ Tours LuaDevKit's own editor buttons. Saved data is in-memory, so each run
 starts over. Afterwards:
   /run LHT_TEST:CompleteStep('Options')            -- advances, like the action
   /run LHT_TEST:OnTargetHidden(LDK_CodeEditorDialog) -- hides the tip
+  /run LHT_TEST:SkipTour()                         -- dismisses every step
 -------------------------------------------------------------------------------]]
 local HelpTourLib = LibStub('LibHelpTour-1.0')
 local editor = LDK_CodeEditorDialog
@@ -54,7 +55,28 @@ local function TestInsideTarget()
   local tour, getBaseline = NewTestTour()
   _G.LHT_TEST = tour
   tour:OnTargetShown('Editor', editor)
-  print('LHT inside target: baseline =', getBaseline())
+  print('LHT inside target: baseline =', getBaseline(), 'skip =', tour.tip.SkipButton:IsShown())
+end
+
+--- Skip button on every step but the last; skipping ends the tour.
+local function TestSkippable()
+  local tour = NewTestTour({ skipTextKey = 'Skip tour' })
+  tour.config.tours[1].skippable = true
+  _G.LHT_TEST = tour
+  tour:OnTargetShown('Editor', editor)
+  print('LHT skippable: skip shown =', tour.tip.SkipButton:IsShown())
+end
+
+--- One-step tour: no Counter, SkipButton or footer gap, even when skippable.
+local function TestSingleStep()
+  local tour = NewTestTour({ skipTextKey = 'Skip tour' })
+  local testTour = tour.config.tours[1]
+  testTour.steps = { testTour.steps[1] }
+  testTour.skippable = true
+  _G.LHT_TEST = tour
+  tour:OnTargetShown('Editor', editor)
+  local tip = tour.tip
+  print('LHT single step: counter =', tip.Counter:IsShown(), 'skip =', tip.SkipButton:IsShown())
 end
 
 --- AddonSuite's case: the tip on UIParent above the target.
@@ -76,6 +98,8 @@ local function TestOtherTarget()
   print('LHT other target: tip created =', tour.tip ~= nil)
 end
 
-TestInsideTarget()
+--TestInsideTarget()
+TestSkippable()
+--TestSingleStep()
 --TestOnUIParent()
 --TestOtherTarget()

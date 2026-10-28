@@ -27,14 +27,25 @@ local TEXT_PAD_X = 44
 local TEXT_PAD_Y = 32
 local TEXT_INSET = 16
 local TEXT_MAX_WIDTH = 188
+-- Footer row, bottom-right: SkipButton, then Counter.
+local FOOTER_Y = 6
+-- Extra room under the text while the footer row shows.
+local FOOTER_PAD_Y = 8
+local COUNTER_INSET = 10
+-- Counter's bottom inset on a tour's last step, where SkipButton hides.
+local LAST_COUNTER_Y = 10
+-- Space between SkipButton and Counter.
+local FOOTER_GAP = 12
 
 --- @class LibHelpTour_Tip : Frame
 --- @field Text FontString
 --- @field Counter FontString @Step position, e.g. 1/3; hidden on one-step tours
 --- @field CloseButton Button
+--- @field SkipButton Button  @Hidden unless the step is skippable
 --- @field Arrow Frame        @Points down; shown while the tip is above its target
 --- @field ArrowUp Frame      @Points up; shown while the tip is below its target
 --- @field onClose fun()?     @Set by the controller; runs on the close button
+--- @field onSkip fun()?      @Set by the controller; runs on the Skip button
 local TipMixin = {}
 
 --[[-----------------------------------------------------------------------------
@@ -46,8 +57,20 @@ local function CreateTexts(tip)
   tip.Text:SetJustifyV('TOP')
   tip.Text:SetPoint('TOPLEFT', TEXT_INSET, -TEXT_INSET)
   tip.Counter = tip:CreateFontString(nil, 'OVERLAY', 'GameFontDisableSmall')
-  tip.Counter:SetPoint('BOTTOMRIGHT', -10, 6)
   tip.Counter:Hide()
+end
+
+--- @param tip LibHelpTour_Tip
+local function CreateSkipButton(tip)
+  local button = CreateFrame('Button', nil, tip)
+  button:SetNormalFontObject('GameFontNormalSmall')
+  button:SetHighlightFontObject('GameFontHighlightSmall')
+  button:SetPoint('BOTTOMRIGHT', tip.Counter, 'BOTTOMLEFT', -FOOTER_GAP, 0)
+  button:SetScript('OnClick', function()
+    if tip.onSkip then tip.onSkip() end
+  end)
+  button:Hide()
+  tip.SkipButton = button
 end
 
 --- @param tip LibHelpTour_Tip
@@ -92,6 +115,7 @@ function lib:CreateTip(parent)
   tip:SetClampedToScreen(true)
   CreateTexts(tip)
   CreateCloseButton(tip)
+  CreateSkipButton(tip)
   tip.Arrow = CreateFrame('Frame', nil, tip, 'GlowBoxArrowTemplate' --[[@as Template]])
   tip.ArrowUp = CreateArrowUp(tip)
   return tip
@@ -102,12 +126,13 @@ Methods
 -------------------------------------------------------------------------------]]
 --- @param text string
 --- @param anchorTo Region
---- @param index number   @Step position in its tour
---- @param count number   @Steps in the tour; 1 hides the counter
-function TipMixin:ShowStep(text, anchorTo, index, count)
+--- @param index number     @Step position in its tour
+--- @param count number     @Steps in the tour; 1 hides the counter
+--- @param skipText string? @Skip button label; nil hides it
+function TipMixin:ShowStep(text, anchorTo, index, count, skipText)
   self.Text:SetText(text)
-  self.Counter:SetFormattedText('%d/%d', index, count)
-  self.Counter:SetShown(count > 1)
+  self:SetCounter(index, count)
+  self:SetSkipText(skipText)
   -- Per show: the parent may have changed or been raised
   self:SetFrameLevel(self:GetParent():GetFrameLevel() + 10)
   self:FitToText()
@@ -115,12 +140,42 @@ function TipMixin:ShowStep(text, anchorTo, index, count)
   self:Show()
 end
 
+--- @param index number
+--- @param count number @1 hides the Counter
+function TipMixin:SetCounter(index, count)
+  local counter = self.Counter
+  counter:SetFormattedText('%d/%d', index, count)
+  counter:SetShown(count > 1)
+  local y = index == count and LAST_COUNTER_Y or FOOTER_Y
+  counter:SetPoint('BOTTOMRIGHT', -COUNTER_INSET, y)
+end
+
+--- @param text string? @nil hides the Skip button
+function TipMixin:SetSkipText(text)
+  local button = self.SkipButton
+  button:SetShown(text ~= nil)
+  if not text then return end
+  button:SetText(text)
+  button:SetSize(button:GetTextWidth(), button:GetTextHeight())
+end
+
 --- Short text shrinks the box; long text wraps at TEXT_MAX_WIDTH.
+--- The footer can widen it past the text. FOOTER_PAD_Y follows the
+--- Counter, not SkipButton, so the last step keeps the same gap.
 function TipMixin:FitToText()
   local text = self.Text
   local width = math.min(text:GetUnboundedStringWidth(), TEXT_MAX_WIDTH)
   text:SetWidth(width)
-  self:SetSize(width + TEXT_PAD_X, text:GetHeight() + TEXT_PAD_Y)
+  local footerPad = self.Counter:IsShown() and FOOTER_PAD_Y or 0
+  local height = text:GetHeight() + TEXT_PAD_Y + footerPad
+  self:SetSize(math.max(width + TEXT_PAD_X, self:FooterWidth()), height)
+end
+
+--- @return number @Width SkipButton and Counter need side by side; 0 without SkipButton
+function TipMixin:FooterWidth()
+  if not self.SkipButton:IsShown() then return 0 end
+  local counterWidth = self.Counter:GetUnboundedStringWidth()
+  return TEXT_INSET + self.SkipButton:GetWidth() + FOOTER_GAP + counterWidth + COUNTER_INSET
 end
 
 --- Above anchorTo when it fits on screen, else below with the arrow flipped.
