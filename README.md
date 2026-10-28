@@ -43,6 +43,7 @@ local Tours = {
   {
     id = 'welcome',
     targetId = 'MainDialog',
+    skippable = false, -- true adds a Skip button
     steps = {
       {
         key = 'OptionsMenu',
